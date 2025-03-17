@@ -15,7 +15,11 @@ namespace OrderManagement.Services
 
         public async Task<List<OrderDTO>> GetOrdersAsync()
         {
-            var orders = await _context.Orders.ToListAsync();
+            var orders = await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Item)
+                .Include(o => o.Client)
+                .ToListAsync();
             List<OrderDTO> orderDTOs = [];
 
             foreach (var order in orders)
@@ -153,9 +157,13 @@ namespace OrderManagement.Services
                 }
 
                 // TODO: Add 5 second delay
+                order.Status = OrderStatus.AwaitingShippment;
+                await _context.SaveChangesAsync();
+                
+                await Task.Delay(4000);
+
                 order.Status = OrderStatus.Shipped;
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
                 return new ResultDTO{
                     IsSuccess = true,

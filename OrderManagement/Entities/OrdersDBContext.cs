@@ -11,7 +11,7 @@ namespace OrderManagement.Entities
         public virtual DbSet<Client> Clients { get; set; }
         public virtual DbSet<OrderItem> OrderItems { get; set; }
 
-        public OrdersDBContext() {}
+        public OrdersDBContext() { }
 
         public OrdersDBContext(DbContextOptions<OrdersDBContext> options) : base(options) { }
 
@@ -23,8 +23,11 @@ namespace OrderManagement.Entities
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var dbPath = System.IO.Path.Join(Environment.CurrentDirectory, "/data/ordermgmt.db");
-            optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            if (!optionsBuilder.IsConfigured)
+            {
+                var dbPath = Path.Join(Environment.CurrentDirectory, "/data/ordermgmt.db");
+                optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            }
         }
     }
 }
