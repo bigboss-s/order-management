@@ -22,7 +22,6 @@ namespace OrderManagement.Tests
         [Fact]
         public async Task GetOrdersAsync_ReturnsCorrectDTOs()
         {
-            // Arrange
             using (var context = new OrdersDBContext(_options))
             {
                 var client = new Client { Name = "Test Client", ClientType = ClientType.Company, Address = "Test Client Address" };
@@ -38,7 +37,6 @@ namespace OrderManagement.Tests
                     PaymentMethod = PaymentMethod.Card
                 };
                 
-                // Explicitly include OrderItems and Item (requires Include in service)
                 order.OrderItems.Add(new OrderItem
                 {
                     IdItem = 1,
@@ -54,16 +52,13 @@ namespace OrderManagement.Tests
             {
                 var service = new OrderService(context);
 
-                // Act
                 var result = await service.GetOrdersAsync();
 
-                // Assert
                 Assert.Single(result);
                 var dto = result.First();
                 Assert.Equal("Test Client", dto.ClientName);
                 Assert.Equal(20.0, dto.Total);
                 
-                // Fails due to missing Include in service code
                 Assert.True(dto.itemQuantities.ContainsKey("Item1"));
                 Assert.Equal(2, dto.itemQuantities["Item1"]);
             }
@@ -72,7 +67,6 @@ namespace OrderManagement.Tests
         [Fact]
         public async Task InsertOrderAsync_ValidData_CreatesOrder()
         {
-            // Arrange
             using (var context = new OrdersDBContext(_options))
             {
                 var client = new Client { Name = "Test Client", Address = "Test Client Address", ClientType = ClientType.Individual };
@@ -87,20 +81,17 @@ namespace OrderManagement.Tests
                 var service = new OrderService(context);
                 var itemQuantities = new Dictionary<int, int> { { 1, 3 } };
 
-                // Act
                 var result = await service.InsertOrderAsync(1, itemQuantities, PaymentMethod.Card, "Address");
 
-                // Assert
                 Assert.True(result.IsSuccess);
                 var order = await context.Orders.FirstOrDefaultAsync();
-                Assert.Equal(90, order.Total); // 3 * 15 = 45
+                Assert.Equal(90, order.Total);
             }
         }
 
         [Fact]
         public async Task MoveOrderToWarehouse_CashOnDeliveryOverLimit_ReturnsToClient()
         {
-            // Arrange
             using (var context = new OrdersDBContext(_options))
             {
                 context.Orders.Add(new Order
@@ -126,11 +117,9 @@ namespace OrderManagement.Tests
             {
                 var service = new OrderService(context);
 
-                // Act
                 var result1 = await service.MoveOrderToWarehouse(1);
                 var result2 = await service.MoveOrderToWarehouse(2);
 
-                // Assert
                 var updatedOrder1 = await context.Orders.FindAsync(1);
                 Assert.Equal(OrderStatus.ReturnedToClient, updatedOrder1.Status);
                 Assert.Contains("cannot be paid by cash on delivery", result1.Message);
@@ -144,7 +133,6 @@ namespace OrderManagement.Tests
         [Fact]
         public async Task ShipOrder_ValidStatus_ShipsOrder()
         {
-            // Arrange
             using (var context = new OrdersDBContext(_options))
             {
                 var order = new Order
@@ -163,10 +151,8 @@ namespace OrderManagement.Tests
             {
                 var service = new OrderService(context);
 
-                // Act
                 var result = await service.ShipOrder(1);
 
-                // Assert
                 Assert.True(result.IsSuccess);
                 var shippedOrder = await context.Orders.FindAsync(1);
                 Assert.Equal(OrderStatus.Shipped, shippedOrder.Status);
