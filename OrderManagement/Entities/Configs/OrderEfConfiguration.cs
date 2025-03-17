@@ -15,6 +15,8 @@ namespace OrderManagement.Entities.Configs
             builder.Property(e => e.Address).IsRequired().HasMaxLength(100);
             builder.Property(e => e.Total).IsRequired();
             builder.Property(e => e.PaymentMethod).IsRequired();
+            // builder.Property(e => e.ProcessingStartTime);
+            // builder.Property(e => e.ShippingDate);
             builder.Property(e => e.IdClient).IsRequired();
 
             builder.HasOne(e => e.Client)

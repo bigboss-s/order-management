@@ -11,6 +11,7 @@ namespace OrderManagement.Entities
     {
         New,
         AtWarehouse,
+        AwaitingShippment,
         Shipped,
         ReturnedToClient,
         Error,
@@ -25,6 +26,8 @@ namespace OrderManagement.Entities
         public PaymentMethod PaymentMethod { get; set; }
         public int IdClient { get; set; }
         public string Address { get; set; }
+        public DateTime? ProcessingStartTime { get; set; }
+        public DateTime? ShippingDate { get; set; }
         public virtual Client Client { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
