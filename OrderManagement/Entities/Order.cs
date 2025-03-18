@@ -24,9 +24,7 @@ namespace OrderManagement.Entities
         public double Total { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
         public int IdClient { get; set; }
-        public string Address { get; set; }
-        public DateTime? ProcessingStartTime { get; set; }
-        public DateTime? ShippingDate { get; set; }
+        public required string Address { get; set; }
         public virtual Client Client { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }

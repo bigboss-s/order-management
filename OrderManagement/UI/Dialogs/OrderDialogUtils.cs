@@ -215,9 +215,10 @@ public class OrderDialogUtils : DialogUtils
             X = 1,
             Y = 12
         };
-        moveButton.Clicked += async () => {
+        moveButton.Clicked += async () =>
+        {
             await MoveToWarehouse(_orderService, order.Id);
-            dialog.SetNeedsDisplay();
+            dialog.Running = false;
         };
 
         var shipButton = new Button("Ship Order")
@@ -225,9 +226,21 @@ public class OrderDialogUtils : DialogUtils
             X = 1,
             Y = 13
         };
-        shipButton.Clicked += async () => {
+        shipButton.Clicked += async () =>
+        {
             await ShipOrder(_orderService, order.Id);
-            dialog.SetNeedsDisplay();
+            dialog.Running = false;
+        };
+
+        var deleteButton = new Button("Delete Order")
+        {
+            X = 1,
+            Y = 14
+        };
+        deleteButton.Clicked += async () =>
+        {
+            await _orderService.DeleteOrderAsync(order.Id);
+            dialog.Running = false;
         };
 
         dialog.Add(
@@ -237,7 +250,8 @@ public class OrderDialogUtils : DialogUtils
             new Label($"Items (item total: {order.Total:C}):") { X = 1, Y = 4 },
             itemList,
             moveButton,
-            shipButton);
+            shipButton,
+            deleteButton);
         Application.Run(dialog);
     }
 
@@ -281,6 +295,7 @@ public class OrderDialogUtils : DialogUtils
                     messageLabel.Text = "Starting shipping process...";
                     spinnerTimer.Start();
                     okButton.Visible = false;
+                    okButton.Enabled = false;
                 });
 
                 var result = await _orderService.ShipOrderAsync(orderId);
@@ -288,9 +303,9 @@ public class OrderDialogUtils : DialogUtils
                 Application.MainLoop.Invoke(() =>
                 {
                     spinnerTimer.Stop();
-                    okButton.Visible = true;
                     messageLabel.Text = result.Message;
                     okButton.Visible = true;
+                    okButton.Enabled = true;
                     dialog.LayoutSubviews();
                 });
             }
@@ -301,6 +316,7 @@ public class OrderDialogUtils : DialogUtils
                     spinnerTimer.Stop();
                     messageLabel.Text = $"Error: {ex.Message}";
                     okButton.Visible = true;
+                    okButton.Enabled = true;
                     dialog.LayoutSubviews();
                 });
             }

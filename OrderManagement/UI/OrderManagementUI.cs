@@ -97,6 +97,7 @@ namespace OrderManagement.UI
             var order = await _orderService.GetOrderByIdIncludesAsync(orderId);
 
             OrderDialogUtils.ShowOrderActions(_orderService, order);
+            await ShowOrdersList(true);
         }
 
         private async Task CreateNewOrder()

@@ -14,5 +14,6 @@ namespace OrderManagement.Services
         public Task<Order> GetOrderByIdIncludesAsync(int idOrder);
         public Task<List<Item>> GetItemsAsync();
         public Task<List<Client>> GetClientsAsync();
+        public Task<ResultDTO> DeleteOrderAsync(int idOrder);
     }
 }

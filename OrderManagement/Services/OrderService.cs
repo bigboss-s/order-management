@@ -334,12 +334,50 @@ namespace OrderManagement.Services
                 .ThenInclude(oi => oi.Item)
                 .FirstOrDefaultAsync(o => o.Id == idOrder);
 
-            if (order == null){
+            if (order == null)
+            {
                 throw new ArgumentException("No order found");
             }
             return order;
         }
 
+        public async Task<ResultDTO> DeleteOrderAsync(int idOrder)
+        {
 
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var orderItem = await _context.OrderItems.SingleOrDefaultAsync(x => x.IdOrder == idOrder);
+                var order = await _context.Orders.SingleOrDefaultAsync(x => x.Id == idOrder);
+
+                if (order == null || orderItem == null)
+                {
+                    throw new ArgumentException("No order found");
+                }
+
+                _context.OrderItems.Remove(orderItem);
+                _context.Orders.Remove(order);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ResultDTO
+                {
+                    IsSuccess = true,
+                    Message = "Order deleted succesfully."
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ResultDTO
+                    {
+                        IsSuccess = false,
+                        Message = ex.Message
+                    };
+            }
+        }
     }
 }
