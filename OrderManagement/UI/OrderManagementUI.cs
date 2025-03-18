@@ -10,11 +10,11 @@ namespace OrderManagement.UI
 {
     public class OrderManagementUI
     {
-        private readonly OrderService _orderService;
+        private readonly IOrderService _orderService;
         private Window _mainWindow;
         private ListView _ordersList;
 
-        public OrderManagementUI(OrderService orderService)
+        public OrderManagementUI(IOrderService orderService)
         {
             _orderService = orderService;
         }
@@ -40,7 +40,10 @@ namespace OrderManagement.UI
             new MenuBarItem("_New order", "", async () => await CreateNewOrder()),
             new MenuBarItem("_New client", "", () => DialogUtils.ShowAddClientDialog(_orderService)),
             new MenuBarItem("_New item", "", () => DialogUtils.ShowAddItemDialog(_orderService)),
-            new MenuBarItem("_Refresh orders", "", async () => await ShowOrdersList(true)),
+            new MenuBarItem("_Refresh orders", "", async () => {
+                await ShowOrdersList(true);
+                DialogUtils.ShowMessage("Information", "Order list refreshed.");
+                }),
             new MenuBarItem("_Quit", "", () => Application.RequestStop())
             });
 
@@ -85,7 +88,6 @@ namespace OrderManagement.UI
             if (refresh)
             {
                 _mainWindow.SetNeedsDisplay();
-                DialogUtils.ShowMessage("Information", "Order list refreshed.");
             }
         }
 
@@ -105,7 +107,7 @@ namespace OrderManagement.UI
                 CanFocus = false
             };
 
-            itemList.SetSource(order.OrderItems.Select(o => 
+            itemList.SetSource(order.OrderItems.Select(o =>
                 $"{o.Item.Name} ( {o.Item.Price:C} ) x {o.ItemQuantity}"
             ).ToList());
 
@@ -124,12 +126,12 @@ namespace OrderManagement.UI
             shipButton.Clicked += async () => await ShipOrder(orderId);
 
             dialog.Add(
-                new Label($"Status: {order.Status}") { X = 1, Y = 1 }, 
-                new Label($"Client: {order.Client.Name}") { X = 1, Y = 2 }, 
-                new Label($"Shipping address: {order.Address}") { X = 1, Y = 3 }, 
-                new Label($"Items (item total: {order.Total:C}):") { X = 1, Y = 4},
+                new Label($"Status: {order.Status}") { X = 1, Y = 1 },
+                new Label($"Client: {order.Client.Name}") { X = 1, Y = 2 },
+                new Label($"Shipping address: {order.Address}") { X = 1, Y = 3 },
+                new Label($"Items (item total: {order.Total:C}):") { X = 1, Y = 4 },
                 itemList,
-                moveButton, 
+                moveButton,
                 shipButton);
             Application.Run(dialog);
         }

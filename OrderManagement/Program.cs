@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OrderManagement.Entities;
 using OrderManagement.Services;
 using OrderManagement.UI;
@@ -9,15 +10,18 @@ public static class Program
     {
         var dbPath = Path.Join(Environment.CurrentDirectory, "/data/ordermgmt.db");
 
-        var options = new DbContextOptionsBuilder<OrdersDBContext>()
-            .UseSqlite($"Data Source={dbPath}")
-            .Options;
+        var services = new ServiceCollection()
+            .AddDbContext<OrdersDBContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}"))
+            .AddScoped<IOrderService, OrderService>()
+            .AddSingleton<OrderManagementUI>()
+            .BuildServiceProvider();
 
-        using var context = new OrdersDBContext(options);
+        using var scope = services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<OrdersDBContext>();
         await context.Database.EnsureCreatedAsync();
 
-        var orderService = new OrderService(context);
-        var ui = new OrderManagementUI(orderService);
-        ui.Run();
+        var ui = services.GetRequiredService<OrderManagementUI>();
+        await ui.Run();
     }
 }

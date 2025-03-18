@@ -16,7 +16,7 @@ public class DialogUtils
         Application.Run(dialog);
     }
 
-    public static async Task ShowNewOrderDialog(OrderService _orderService)
+    public static async Task ShowNewOrderDialog(IOrderService _orderService)
     {
         var createDialog = new Dialog("Create new order", 73, 26); 
         var selectedItems = new Dictionary<int, int>();
@@ -76,20 +76,14 @@ public class DialogUtils
             X = 1,
             Y = 17,
             Width = Dim.Fill(),
-            Height = 5
+            Height = 5,
+
         };
 
         var addItemButton = new Button("Add item")
         {
             X = Pos.Right(quantityField) + 2,
             Y = 15
-        };
-
-        var removeItemButton = new Button("Remove selected item")
-        {
-            X = 1,
-            Y = 23,
-            Width = 20
         };
 
         var paymentOptions = Enum.GetValues<PaymentMethod>().Select(p => $"  {p}").ToList();
@@ -122,8 +116,7 @@ public class DialogUtils
         var createButton = new Button("Create order")
         {
             X = Pos.Center(),
-            Y = Pos.AnchorEnd(1),
-            IsDefault = true
+            Y = Pos.AnchorEnd(1)
         };
 
         addItemButton.Clicked += () =>
@@ -132,17 +125,6 @@ public class DialogUtils
             {
                 var selectedItem = items[itemList.SelectedItem];
                 selectedItems[selectedItem.Id] = quantity;
-                selectedItemsList.SetSource(selectedItems.Select(kvp =>
-                    $"{items.First(i => i.Id == kvp.Key).Name} x {kvp.Value}").ToList());
-            }
-        };
-
-        removeItemButton.Clicked += () =>
-        {
-            if (selectedItemsList.SelectedItem >= 0)
-            {
-                var key = selectedItems.Keys.ElementAt(selectedItemsList.SelectedItem);
-                selectedItems.Remove(key);
                 selectedItemsList.SetSource(selectedItems.Select(kvp =>
                     $"{items.First(i => i.Id == kvp.Key).Name} x {kvp.Value}").ToList());
             }
@@ -197,8 +179,7 @@ public class DialogUtils
             quantityField,
             addItemButton,
             new Label("Selected items:") { X = 1, Y = 16 },
-            selectedItemsList,
-            removeItemButton
+            selectedItemsList
         );
 
         rightPanel.Add(
@@ -211,7 +192,7 @@ public class DialogUtils
         Application.Run(createDialog);
     }
 
-    public static void ShowAddClientDialog(OrderService _orderService)
+    public static void ShowAddClientDialog(IOrderService _orderService)
     {
         var dialog = new Dialog("Add new client", 60, 20);
         var nameField = new TextField("")
@@ -296,7 +277,7 @@ public class DialogUtils
         Application.Run(dialog);
     }
 
-    public static void ShowAddItemDialog(OrderService _orderService)
+    public static void ShowAddItemDialog(IOrderService _orderService)
     {
         var dialog = new Dialog("Add new item", 60, 15);
         var nameField = new TextField("")

@@ -11,5 +11,8 @@ namespace OrderManagement.Services
         public Task<ResultDTO> ShipOrderAsync(int idOrder);
         public Task<ResultDTO> InsertClientAsync(string name, ClientType clientType, string address);
         public Task<ResultDTO> InsertItemAsync(string name, double price);
+        public Task<Order> GetOrderByIdIncludesAsync(int idOrder);
+        public Task<List<Item>> GetItemsAsync();
+        public Task<List<Client>> GetClientsAsync();
     }
 }
