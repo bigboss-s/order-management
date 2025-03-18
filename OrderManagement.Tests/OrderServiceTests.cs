@@ -85,7 +85,7 @@ namespace OrderManagement.Tests
 
                 Assert.True(result.IsSuccess);
                 var order = await context.Orders.FirstOrDefaultAsync();
-                Assert.Equal(90, order.Total);
+                Assert.Equal(90, order?.Total);
             }
         }
 
@@ -117,16 +117,16 @@ namespace OrderManagement.Tests
             {
                 var service = new OrderService(context);
 
-                var result1 = await service.MoveOrderToWarehouse(1);
-                var result2 = await service.MoveOrderToWarehouse(2);
+                var result1 = await service.MoveOrderToWarehouseAsync(1);
+                var result2 = await service.MoveOrderToWarehouseAsync(2);
 
                 var updatedOrder1 = await context.Orders.FindAsync(1);
-                Assert.Equal(OrderStatus.ReturnedToClient, updatedOrder1.Status);
-                Assert.Contains("cannot be paid by cash on delivery", result1.Message);
+                Assert.Equal(OrderStatus.ReturnedToClient, updatedOrder1?.Status);
+                Assert.Contains("Order returned to Client", result1.Message);
 
                 var updatedOrder2 = await context.Orders.FindAsync(2);
-                Assert.NotEqual(OrderStatus.ReturnedToClient, updatedOrder2.Status);
-                Assert.DoesNotContain("cannot be paid by cash on delivery", result2.Message);
+                Assert.NotEqual(OrderStatus.ReturnedToClient, updatedOrder2?.Status);
+                Assert.DoesNotContain("Order returned to Client", result2.Message);
             }
         }
 
@@ -151,11 +151,57 @@ namespace OrderManagement.Tests
             {
                 var service = new OrderService(context);
 
-                var result = await service.ShipOrder(1);
+                var result = await service.ShipOrderAsync(1);
 
                 Assert.True(result.IsSuccess);
                 var shippedOrder = await context.Orders.FindAsync(1);
-                Assert.Equal(OrderStatus.Shipped, shippedOrder.Status);
+                Assert.Equal(OrderStatus.Shipped, shippedOrder?.Status);
+            }
+        }
+
+        [Fact]
+        public async Task AddOrder_AddressCheck()
+        {
+            using (var context = new OrdersDBContext(_options))
+            {
+                var client = new Client
+                {
+                    Id = 1,
+                    Name = "Test Client",
+                    Address = "Test Address"
+                };
+                context.Clients.Add(client);
+
+                var item = new Item { Name = "Test Item", Price = 30};
+                context.Items.Add(item);
+
+                await context.SaveChangesAsync();
+            }
+
+            using (var context = new OrdersDBContext(_options))
+            {
+                var service = new OrderService(context);
+
+                var result1 = await service.InsertOrderAsync(
+                    1,
+                    new Dictionary<int, int>{
+                        {1, 1}
+                    },
+                    PaymentMethod.Card,
+                    ""
+                );
+
+                var result2 = await service.InsertOrderAsync(
+                    1,
+                    new Dictionary<int, int>{
+                        {1, 1}
+                    },
+                    PaymentMethod.Card,
+                    "Test address not empty"
+                );
+
+                Assert.False(result1.IsSuccess);
+                Assert.True(result2.IsSuccess);
             }
         }
     }
