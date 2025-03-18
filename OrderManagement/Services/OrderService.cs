@@ -124,7 +124,7 @@ namespace OrderManagement.Services
             {
                 await GetClientByIdAsync(idClient);
 
-                if (address == "")
+                if (string.IsNullOrWhiteSpace(address))
                 {
                     throw new ArgumentException("Invalid shipping address.");
                 }
@@ -328,11 +328,16 @@ namespace OrderManagement.Services
 
         public async Task<Order> GetOrderByIdIncludesAsync(int idOrder)
         {
-            return await _context.Orders
+            var order = await _context.Orders
                 .Include(o => o.Client)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Item)
                 .FirstOrDefaultAsync(o => o.Id == idOrder);
+
+            if (order == null){
+                throw new ArgumentException("No order found");
+            }
+            return order;
         }
 
 
