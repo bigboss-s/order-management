@@ -1,3 +1,4 @@
+using System.Transactions;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Entities;
 using OrderManagement.Models;
@@ -25,23 +26,94 @@ namespace OrderManagement.Services
             foreach (var order in orders)
             {
                 Dictionary<string, int> itemQuantities = [];
-                
+
                 foreach (var orderItem in order.OrderItems)
                 {
                     itemQuantities.Add(orderItem.Item.Name, orderItem.ItemQuantity);
                 }
 
-                orderDTOs.Add(new OrderDTO{
+                orderDTOs.Add(new OrderDTO
+                {
                     Id = order.Id,
                     Total = order.Total,
                     PaymentMethod = order.PaymentMethod,
                     ClientName = order.Client.Name,
                     Address = order.Address,
-                    itemQuantities = itemQuantities
+                    itemQuantities = itemQuantities,
+                    Status = order.Status
                 });
             }
 
             return orderDTOs;
+        }
+
+        public async Task<ResultDTO> InsertClientAsync(string name, ClientType clientType, string address)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var client = new Client
+                {
+                    Name = name,
+                    ClientType = clientType,
+                    Address = address
+                };
+
+                await _context.Clients.AddAsync(client);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ResultDTO
+                {
+                    IsSuccess = true,
+                    Message = "Client added succesfully."
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ResultDTO
+                {
+                    IsSuccess = false,
+                    Message = ex.Message
+                };
+            }
+
+
+        }
+
+        public async Task<ResultDTO> InsertItemAsync(string name, double price)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var item = new Item
+                {
+                    Name = name,
+                    Price = price
+                };
+
+                await _context.Items.AddAsync(item);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ResultDTO
+                {
+                    IsSuccess = true,
+                    Message = "Item added succesfully."
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ResultDTO
+                {
+                    IsSuccess = false,
+                    Message = ex.Message
+                };
+            }
         }
 
         public async Task<ResultDTO> InsertOrderAsync(int idClient, Dictionary<int, int> itemQuantities, PaymentMethod paymentMethod, string address)
@@ -81,7 +153,8 @@ namespace OrderManagement.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return new ResultDTO{
+                return new ResultDTO
+                {
                     IsSuccess = true,
                     Message = "Order succesfully created.",
                     NewOrder = newOrder
@@ -91,14 +164,15 @@ namespace OrderManagement.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return new ResultDTO{
+                return new ResultDTO
+                {
                     IsSuccess = false,
                     Message = ex.Message
                 };
             }
         }
 
-        public async Task<ResultDTO> MoveOrderToWarehouse(int idOrder)
+        public async Task<ResultDTO> MoveOrderToWarehouseAsync(int idOrder)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -108,7 +182,7 @@ namespace OrderManagement.Services
 
                 if (order.Status != OrderStatus.New)
                 {
-                    throw new InvalidOperationException("Order has already been moved to warehouse.");
+                    throw new InvalidOperationException("Order cannot be moved to warehouse.");
                 }
 
                 if (order.Total > 2500 && order.PaymentMethod == PaymentMethod.CashOnDelivery)
@@ -118,9 +192,10 @@ namespace OrderManagement.Services
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return new ResultDTO{
+                    return new ResultDTO
+                    {
                         IsSuccess = false,
-                        Message = "Orders of value above 2500 cannot be paid by cash on delivery. Order returned to Client."
+                        Message = "Orders of value above 2500 cannot be paid\nby cash on delivery.\nOrder returned to Client."
                     };
                 }
 
@@ -129,7 +204,8 @@ namespace OrderManagement.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return new ResultDTO {
+                return new ResultDTO
+                {
                     IsSuccess = true,
                     Message = "Order succesfully moved to warehouse."
                 };
@@ -137,7 +213,8 @@ namespace OrderManagement.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return new ResultDTO{
+                return new ResultDTO
+                {
                     IsSuccess = false,
                     Message = ex.Message
                 };
@@ -145,37 +222,54 @@ namespace OrderManagement.Services
 
         }
 
-        public async Task<ResultDTO> ShipOrder(int idOrder){
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try {
+        public async Task<ResultDTO> ShipOrderAsync(int idOrder)
+        {
+            try
+            {
                 var order = await GetOrderByIdAsync(idOrder);
 
                 if (order.Status != OrderStatus.AtWarehouse)
                 {
-                    throw new InvalidOperationException("Order not ready to be shipped.");
+                    throw new InvalidOperationException("Order cannot be shipped or has\nalready been shipped.");
+
                 }
 
-                // TODO: Add 5 second delay
-                order.Status = OrderStatus.AwaitingShippment;
-                await _context.SaveChangesAsync();
-                
-                await Task.Delay(4000);
+                await ProcessShippingAsync(order);
 
-                order.Status = OrderStatus.Shipped;
-                await _context.SaveChangesAsync();
-
-                return new ResultDTO{
+                return new ResultDTO
+                {
                     IsSuccess = true,
-                    Message = "Order shipped succesfully"
+                    Message = "Order shipped succesfully."
                 };
             }
             catch (Exception ex)
             {
-                return new ResultDTO{
+
+                return new ResultDTO
+                {
                     IsSuccess = false,
                     Message = ex.Message
                 };
+            }
+        }
+
+        private async Task ProcessShippingAsync(Order order)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                Task.Delay(3000).Wait();
+
+                order.Status = OrderStatus.Shipped;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 
@@ -221,5 +315,26 @@ namespace OrderManagement.Services
             }
             return order;
         }
+
+        public async Task<List<Client>> GetClientsAsync()
+        {
+            return await _context.Clients.ToListAsync();
+        }
+
+        public async Task<List<Item>> GetItemsAsync()
+        {
+            return await _context.Items.ToListAsync();
+        }
+
+        public async Task<Order> GetOrderByIdIncludesAsync(int idOrder)
+        {
+            return await _context.Orders
+                .Include(o => o.Client)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Item)
+                .FirstOrDefaultAsync(o => o.Id == idOrder);
+        }
+
+
     }
 }

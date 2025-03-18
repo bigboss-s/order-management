@@ -11,7 +11,6 @@ namespace OrderManagement.Entities
     {
         New,
         AtWarehouse,
-        AwaitingShippment,
         Shipped,
         ReturnedToClient,
         Error,

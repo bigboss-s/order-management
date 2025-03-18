@@ -9,5 +9,6 @@ public class OrderDTO
     public PaymentMethod PaymentMethod { get; set; }
     public string ClientName { get; set; }
     public string Address { get; set; }
+    public OrderStatus Status { get; set; }
     public Dictionary <string, int> itemQuantities = [];
 }
